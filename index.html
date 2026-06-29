@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>排班日历 - 上6休2</title>
+<title>排班日历 - 夜夜中中早早</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif; background: #f0f2f5; color: #333; min-height: 100vh; }
@@ -25,7 +25,7 @@
   .hint { font-size: 11px; color: #999; margin-top: 8px; line-height: 1.5; }
 
   /* 图例 */
-  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; font-size: 12px; color: #666; }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; font-size: 12px; color: #666; }
   .legend span { display: flex; align-items: center; gap: 5px; }
   .legend .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
 
@@ -45,7 +45,8 @@
   .day-cell .day-tag { font-size: 9px; margin-top: 1px; font-weight: 500; line-height: 1.2; }
   .day-cell.empty { background: transparent; }
   .day-cell.rest { background: #e8f5e9; color: #2e7d32; }
-  .day-cell.work { background: #fff3e0; color: #e65100; }
+  .day-cell.early { background: #fff8e1; color: #f57f17; }
+  .day-cell.middle { background: #f3e5f5; color: #7b1fa2; }
   .day-cell.night { background: #e3f2fd; color: #1565c0; }
   .day-cell.today { box-shadow: inset 0 0 0 2.5px #667eea; }
 
@@ -54,16 +55,11 @@
   .today-info .top-row { display: flex; justify-content: space-between; align-items: flex-start; }
   .today-info .date-label { font-size: 13px; color: #999; }
   .today-info .today-status { font-size: 20px; font-weight: 700; margin-top: 4px; }
-  .today-info .rest-col { color: #2e7d32; }
-  .today-info .work-col { color: #e65100; }
-  .today-info .night-col { color: #1565c0; }
   .next-shifts { margin-top: 14px; border-top: 1px solid #f0f0f0; padding-top: 12px; }
   .next-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
   .next-row:last-child { margin-bottom: 0; }
   .next-label { font-size: 13px; color: #888; }
   .next-val { font-size: 14px; font-weight: 600; }
-  .next-val.rest-val { color: #2e7d32; }
-  .next-val.night-val { color: #1565c0; }
 
   /* 月统计 */
   .stats { display: flex; gap: 10px; margin-top: 14px; }
@@ -76,10 +72,10 @@
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   /* 排班说明 */
-  .shift-desc { background: #fff; border-radius: 14px; padding: 14px 16px; margin-top: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); font-size: 13px; color: #666; line-height: 1.8; }
+  .shift-desc { background: #fff; border-radius: 14px; padding: 14px 16px; margin-top: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); font-size: 13px; color: #666; line-height: 2; }
   .shift-desc .title { font-size: 14px; font-weight: 600; color: #333; margin-bottom: 6px; }
   .shift-desc .row { display: flex; align-items: center; gap: 8px; }
-  .shift-desc .row .tag { padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+  .shift-desc .row .tag { padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -88,22 +84,23 @@
 
 <div class="header">
   <h1>📅 我的排班日历</h1>
-  <div class="subtitle">上6休2 · 循环排班</div>
+  <div class="subtitle">夜夜 · 中中 · 早早 · 休休（8天循环）</div>
 </div>
 
 <div class="container">
   <div class="settings">
-    <label>排班起始日（第1天：下午+夜班）</label>
+    <label>排班起始日（第1天：夜班）</label>
     <div class="settings-row">
       <input type="date" id="startDate" />
-      <button class="btn-share" id="btnShare">📤 分享</button>
+      <button class="btn-share" id="btnShare">📤 复制分享链接</button>
     </div>
-    <div class="hint">设置起始日后，日历自动按「上6休2」循环标记。分享按钮会生成含排班信息的链接。</div>
+    <div class="hint">设置起始日后，日历自动按「夜夜→中中→早早→休休」8天循环标记。分享链接含排班信息，同事打开即看。</div>
   </div>
 
   <div class="legend">
-    <span><span class="dot" style="background:#e3f2fd"></span> 下午+夜班</span>
-    <span><span class="dot" style="background:#fff3e0"></span> 上班</span>
+    <span><span class="dot" style="background:#e3f2fd"></span> 夜班</span>
+    <span><span class="dot" style="background:#f3e5f5"></span> 中班</span>
+    <span><span class="dot" style="background:#fff8e1"></span> 早班</span>
     <span><span class="dot" style="background:#e8f5e9"></span> 休息</span>
   </div>
 
@@ -126,25 +123,28 @@
 
   <div class="shift-desc">
     <div class="title">排班规则（8天一循环）</div>
-    <div class="row"><span class="tag" style="background:#e3f2fd;color:#1565c0">第1天</span> 下午班 + 夜班</div>
-    <div class="row"><span class="tag" style="background:#fff3e0;color:#e65100">第2~5天</span> 正常上班</div>
-    <div class="row"><span class="tag" style="background:#fff3e0;color:#e65100">第6天</span> 早班（下午下班）</div>
-    <div class="row"><span class="tag" style="background:#e8f5e9;color:#2e7d32">第7~8天</span> 休息</div>
+    <div class="row"><span class="tag" style="background:#e3f2fd;color:#1565c0">第1~2天</span> 夜班 🌙</div>
+    <div class="row"><span class="tag" style="background:#f3e5f5;color:#7b1fa2">第3~4天</span> 中班 🌆</div>
+    <div class="row"><span class="tag" style="background:#fff8e1;color:#f57f17">第5~6天</span> 早班 🌅</div>
+    <div class="row"><span class="tag" style="background:#e8f5e9;color:#2e7d32">第7~8天</span> 休息 😴</div>
   </div>
 </div>
 
 <script>
 const CYCLE = 8;
 
+// 8天一循环：夜夜中中早早休休
+// pos: 0,1=夜班  2,3=中班  4,5=早班  6,7=休息
 function getDayType(startDate, targetDate) {
   const start = new Date(startDate + 'T00:00:00');
   const target = new Date(targetDate + 'T00:00:00');
   const diffDays = Math.round((target - start) / (1000 * 60 * 60 * 24));
   const pos = ((diffDays % CYCLE) + CYCLE) % CYCLE;
-  if (pos === 0) return { type: 'night', label: '下午+夜班', color: 'night' };
-  if (pos >= 1 && pos <= 4) return { type: 'work', label: '上班', color: 'work' };
-  if (pos === 5) return { type: 'work', label: '早班', color: 'work' };
-  return { type: 'rest', label: '休息', color: 'rest' };
+
+  if (pos === 0 || pos === 1) return { type: 'night',  label: '夜班',   color: 'night'  };
+  if (pos === 2 || pos === 3) return { type: 'middle', label: '中班',   color: 'middle' };
+  if (pos === 4 || pos === 5) return { type: 'early',  label: '早班',   color: 'early'  };
+  return                              { type: 'rest',   label: '休息',   color: 'rest'   };
 }
 
 function formatDate(y, m, d) {
@@ -159,14 +159,11 @@ function showToast(msg) {
 }
 
 function getStartDate() {
-  // 优先从 URL 参数读取
   const params = new URLSearchParams(window.location.search);
   const fromUrl = params.get('start');
   if (fromUrl) return fromUrl;
-  // 其次从 localStorage 读取
   const saved = localStorage.getItem('shiftStartDay');
   if (saved) return saved;
-  // 默认今天
   const today = new Date();
   return formatDate(today.getFullYear(), today.getMonth(), today.getDate());
 }
@@ -223,21 +220,29 @@ function renderTodayInfo(startDate) {
   const today = new Date();
   const dateStr = formatDate(today.getFullYear(), today.getMonth(), today.getDate());
   const dayType = getDayType(startDate, dateStr);
-  const colClass = dayType.color === 'rest' ? 'rest-col' : dayType.color === 'night' ? 'night-col' : 'work-col';
 
-  const nextRest = findNext(startDate, dateStr, t => t.type === 'rest');
+  const colMap = { rest: 'rest', night: 'night', middle: 'middle', early: 'early' };
+  const colClass = colMap[dayType.color] || '';
+
+  const nextRest   = findNext(startDate, dateStr, t => t.type === 'rest');
   const nextNight = findNext(startDate, dateStr, t => t.color === 'night');
+  const nextMiddle = findNext(startDate, dateStr, t => t.color === 'middle');
+  const nextEarly  = findNext(startDate, dateStr, t => t.color === 'early');
+
+  const colStyle = { rest: '#2e7d32', night: '#1565c0', middle: '#7b1fa2', early: '#f57f17' };
 
   document.getElementById('todayInfo').innerHTML = `
     <div class="top-row">
       <div>
         <div class="date-label">今天 · ${dateStr}</div>
-        <div class="today-status ${colClass}">${dayType.label}</div>
+        <div class="today-status" style="color:${colStyle[dayType.color]}">${dayType.label}</div>
       </div>
     </div>
     <div class="next-shifts">
-      <div class="next-row"><span class="next-label">🟢 下次休息</span><span class="next-val rest-val">${nextRest}</span></div>
-      <div class="next-row"><span class="next-label">🔵 下次夜班</span><span class="next-val night-val">${nextNight}</span></div>
+      <div class="next-row"><span class="next-label">🌙 下次夜班</span><span class="next-val" style="color:${colStyle.night}">${nextNight}</span></div>
+      <div class="next-row"><span class="next-label">🌆 下次中班</span><span class="next-val" style="color:${colStyle.middle}">${nextMiddle}</span></div>
+      <div class="next-row"><span class="next-label">🌅 下次早班</span><span class="next-val" style="color:${colStyle.early}">${nextEarly}</span></div>
+      <div class="next-row"><span class="next-label">😴 下次休息</span><span class="next-val" style="color:${colStyle.rest}">${nextRest}</span></div>
     </div>
   `;
 }
@@ -254,15 +259,21 @@ function findNext(startDate, fromDate, predicate) {
 }
 
 function renderStats(startDate) {
-  let workCount = 0, restCount = 0;
+  let nightCount = 0, middleCount = 0, earlyCount = 0, restCount = 0;
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   for (let d = 1; d <= daysInMonth; d++) {
     const t = getDayType(startDate, formatDate(currentYear, currentMonth, d));
-    if (t.type === 'rest') restCount++; else workCount++;
+    if (t.color === 'night')  nightCount++;
+    if (t.color === 'middle') middleCount++;
+    if (t.color === 'early')  earlyCount++;
+    if (t.color === 'rest')   restCount++;
   }
+  const workCount = nightCount + middleCount + earlyCount;
   document.getElementById('stats').innerHTML = `
-    <div class="stat-card"><div class="num" style="color:#e65100">${workCount}</div><div class="desc">本月上班</div></div>
-    <div class="stat-card"><div class="num" style="color:#2e7d32">${restCount}</div><div class="desc">本月休息</div></div>
+    <div class="stat-card"><div class="num" style="color:#1565c0">${nightCount}</div><div class="desc">夜班</div></div>
+    <div class="stat-card"><div class="num" style="color:#7b1fa2">${middleCount}</div><div class="desc">中班</div></div>
+    <div class="stat-card"><div class="num" style="color:#f57f17">${earlyCount}</div><div class="desc">早班</div></div>
+    <div class="stat-card"><div class="num" style="color:#2e7d32">${restCount}</div><div class="desc">休息</div></div>
   `;
 }
 
