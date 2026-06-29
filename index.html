@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>排班日历 - 上6休2</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif; background: #f0f2f5; color: #333; min-height: 100vh; }
+
+  .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 20px 16px 16px; }
+  .header h1 { font-size: 20px; font-weight: 700; text-align: center; }
+  .header .subtitle { text-align: center; font-size: 13px; opacity: 0.85; margin-top: 4px; }
+
+  .container { max-width: 480px; margin: 0 auto; padding: 0 12px 24px; }
+
+  /* 设置区 */
+  .settings { background: #fff; border-radius: 14px; padding: 16px; margin: -10px 0 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); position: relative; top: -10px; }
+  .settings label { font-size: 13px; color: #666; display: block; margin-bottom: 8px; font-weight: 500; }
+  .settings-row { display: flex; gap: 10px; align-items: center; }
+  .settings input[type=date] { flex: 1; padding: 10px 12px; border: 1.5px solid #e0e0e0; border-radius: 10px; font-size: 15px; background: #fafafa; transition: border-color 0.2s; }
+  .settings input[type=date]:focus { border-color: #667eea; outline: none; background: #fff; }
+  .btn-share { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; border: none; border-radius: 10px; padding: 10px 16px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: opacity 0.2s; }
+  .btn-share:active { opacity: 0.8; }
+  .hint { font-size: 11px; color: #999; margin-top: 8px; line-height: 1.5; }
+
+  /* 图例 */
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; font-size: 12px; color: #666; }
+  .legend span { display: flex; align-items: center; gap: 5px; }
+  .legend .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+
+  /* 日历导航 */
+  .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .cal-nav button { background: #fff; border: 1.5px solid #e0e0e0; border-radius: 10px; padding: 7px 18px; font-size: 15px; cursor: pointer; color: #555; font-weight: 500; transition: all 0.15s; }
+  .cal-nav button:active { background: #f0f0f0; transform: scale(0.97); }
+  .cal-nav .month-title { font-size: 17px; font-weight: 700; color: #1a1a1a; }
+
+  /* 日历 */
+  .calendar { background: #fff; border-radius: 14px; padding: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .weekdays { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 6px; }
+  .weekdays div { text-align: center; font-size: 12px; color: #aaa; padding: 6px 0; font-weight: 500; }
+  .days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .day-cell { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 10px; font-size: 15px; position: relative; transition: transform 0.1s; }
+  .day-cell .day-num { font-weight: 600; font-size: 15px; }
+  .day-cell .day-tag { font-size: 9px; margin-top: 1px; font-weight: 500; line-height: 1.2; }
+  .day-cell.empty { background: transparent; }
+  .day-cell.rest { background: #e8f5e9; color: #2e7d32; }
+  .day-cell.work { background: #fff3e0; color: #e65100; }
+  .day-cell.night { background: #e3f2fd; color: #1565c0; }
+  .day-cell.today { box-shadow: inset 0 0 0 2.5px #667eea; }
+
+  /* 今日信息 */
+  .today-info { background: #fff; border-radius: 14px; padding: 16px; margin-top: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .today-info .top-row { display: flex; justify-content: space-between; align-items: flex-start; }
+  .today-info .date-label { font-size: 13px; color: #999; }
+  .today-info .today-status { font-size: 20px; font-weight: 700; margin-top: 4px; }
+  .today-info .rest-col { color: #2e7d32; }
+  .today-info .work-col { color: #e65100; }
+  .today-info .night-col { color: #1565c0; }
+  .next-shifts { margin-top: 14px; border-top: 1px solid #f0f0f0; padding-top: 12px; }
+  .next-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .next-row:last-child { margin-bottom: 0; }
+  .next-label { font-size: 13px; color: #888; }
+  .next-val { font-size: 14px; font-weight: 600; }
+  .next-val.rest-val { color: #2e7d32; }
+  .next-val.night-val { color: #1565c0; }
+
+  /* 月统计 */
+  .stats { display: flex; gap: 10px; margin-top: 14px; }
+  .stat-card { flex: 1; background: #fff; border-radius: 14px; padding: 14px 10px; text-align: center; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .stat-card .num { font-size: 26px; font-weight: 800; }
+  .stat-card .desc { font-size: 12px; color: #999; margin-top: 4px; }
+
+  /* Toast */
+  .toast { position: fixed; top: 60px; left: 50%; transform: translateX(-50%) translateY(-20px); background: rgba(0,0,0,0.78); color: #fff; padding: 10px 24px; border-radius: 20px; font-size: 14px; opacity: 0; transition: all 0.3s; pointer-events: none; z-index: 999; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* 排班说明 */
+  .shift-desc { background: #fff; border-radius: 14px; padding: 14px 16px; margin-top: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); font-size: 13px; color: #666; line-height: 1.8; }
+  .shift-desc .title { font-size: 14px; font-weight: 600; color: #333; margin-bottom: 6px; }
+  .shift-desc .row { display: flex; align-items: center; gap: 8px; }
+  .shift-desc .row .tag { padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<div class="header">
+  <h1>📅 我的排班日历</h1>
+  <div class="subtitle">上6休2 · 循环排班</div>
+</div>
+
+<div class="container">
+  <div class="settings">
+    <label>排班起始日（第1天：下午+夜班）</label>
+    <div class="settings-row">
+      <input type="date" id="startDate" />
+      <button class="btn-share" id="btnShare">📤 分享</button>
+    </div>
+    <div class="hint">设置起始日后，日历自动按「上6休2」循环标记。分享按钮会生成含排班信息的链接。</div>
+  </div>
+
+  <div class="legend">
+    <span><span class="dot" style="background:#e3f2fd"></span> 下午+夜班</span>
+    <span><span class="dot" style="background:#fff3e0"></span> 上班</span>
+    <span><span class="dot" style="background:#e8f5e9"></span> 休息</span>
+  </div>
+
+  <div class="cal-nav">
+    <button id="prevMonth">◀ 上月</button>
+    <div class="month-title" id="monthTitle"></div>
+    <button id="nextMonth">下月 ▶</button>
+  </div>
+
+  <div class="calendar">
+    <div class="weekdays">
+      <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
+    </div>
+    <div class="days" id="daysGrid"></div>
+  </div>
+
+  <div class="today-info" id="todayInfo"></div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="shift-desc">
+    <div class="title">排班规则（8天一循环）</div>
+    <div class="row"><span class="tag" style="background:#e3f2fd;color:#1565c0">第1天</span> 下午班 + 夜班</div>
+    <div class="row"><span class="tag" style="background:#fff3e0;color:#e65100">第2~5天</span> 正常上班</div>
+    <div class="row"><span class="tag" style="background:#fff3e0;color:#e65100">第6天</span> 早班（下午下班）</div>
+    <div class="row"><span class="tag" style="background:#e8f5e9;color:#2e7d32">第7~8天</span> 休息</div>
+  </div>
+</div>
+
+<script>
+const CYCLE = 8;
+
+function getDayType(startDate, targetDate) {
+  const start = new Date(startDate + 'T00:00:00');
+  const target = new Date(targetDate + 'T00:00:00');
+  const diffDays = Math.round((target - start) / (1000 * 60 * 60 * 24));
+  const pos = ((diffDays % CYCLE) + CYCLE) % CYCLE;
+  if (pos === 0) return { type: 'night', label: '下午+夜班', color: 'night' };
+  if (pos >= 1 && pos <= 4) return { type: 'work', label: '上班', color: 'work' };
+  if (pos === 5) return { type: 'work', label: '早班', color: 'work' };
+  return { type: 'rest', label: '休息', color: 'rest' };
+}
+
+function formatDate(y, m, d) {
+  return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function getStartDate() {
+  // 优先从 URL 参数读取
+  const params = new URLSearchParams(window.location.search);
+  const fromUrl = params.get('start');
+  if (fromUrl) return fromUrl;
+  // 其次从 localStorage 读取
+  const saved = localStorage.getItem('shiftStartDay');
+  if (saved) return saved;
+  // 默认今天
+  const today = new Date();
+  return formatDate(today.getFullYear(), today.getMonth(), today.getDate());
+}
+
+function updateURL(startDate) {
+  const url = new URL(window.location);
+  url.searchParams.set('start', startDate);
+  window.history.replaceState({}, '', url);
+}
+
+function renderCalendar() {
+  const startDate = document.getElementById('startDate').value;
+  if (!startDate) {
+    document.getElementById('daysGrid').innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#999;padding:40px 0;font-size:14px;">请设置排班起始日</div>';
+    document.getElementById('monthTitle').textContent = `${currentYear}年${currentMonth+1}月`;
+    document.getElementById('todayInfo').innerHTML = '';
+    document.getElementById('stats').innerHTML = '';
+    return;
+  }
+
+  updateURL(startDate);
+  localStorage.setItem('shiftStartDay', startDate);
+
+  const grid = document.getElementById('daysGrid');
+  grid.innerHTML = '';
+
+  const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const today = new Date();
+  const todayStr = formatDate(today.getFullYear(), today.getMonth(), today.getDate());
+
+  for (let i = 0; i < firstDay; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'day-cell empty';
+    grid.appendChild(cell);
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = formatDate(currentYear, currentMonth, d);
+    const cell = document.createElement('div');
+    const dayType = getDayType(startDate, dateStr);
+    cell.className = `day-cell ${dayType.color}`;
+    if (dateStr === todayStr) cell.classList.add('today');
+    cell.innerHTML = `<span class="day-num">${d}</span><span class="day-tag">${dayType.label}</span>`;
+    grid.appendChild(cell);
+  }
+
+  document.getElementById('monthTitle').textContent = `${currentYear}年${currentMonth+1}月`;
+  renderTodayInfo(startDate);
+  renderStats(startDate);
+}
+
+function renderTodayInfo(startDate) {
+  const today = new Date();
+  const dateStr = formatDate(today.getFullYear(), today.getMonth(), today.getDate());
+  const dayType = getDayType(startDate, dateStr);
+  const colClass = dayType.color === 'rest' ? 'rest-col' : dayType.color === 'night' ? 'night-col' : 'work-col';
+
+  const nextRest = findNext(startDate, dateStr, t => t.type === 'rest');
+  const nextNight = findNext(startDate, dateStr, t => t.color === 'night');
+
+  document.getElementById('todayInfo').innerHTML = `
+    <div class="top-row">
+      <div>
+        <div class="date-label">今天 · ${dateStr}</div>
+        <div class="today-status ${colClass}">${dayType.label}</div>
+      </div>
+    </div>
+    <div class="next-shifts">
+      <div class="next-row"><span class="next-label">🟢 下次休息</span><span class="next-val rest-val">${nextRest}</span></div>
+      <div class="next-row"><span class="next-label">🔵 下次夜班</span><span class="next-val night-val">${nextNight}</span></div>
+    </div>
+  `;
+}
+
+function findNext(startDate, fromDate, predicate) {
+  let d = new Date(fromDate + 'T00:00:00');
+  d.setDate(d.getDate() + 1);
+  for (let i = 0; i < 120; i++) {
+    const dateStr = formatDate(d.getFullYear(), d.getMonth(), d.getDate());
+    if (predicate(getDayType(startDate, dateStr))) return dateStr;
+    d.setDate(d.getDate() + 1);
+  }
+  return '—';
+}
+
+function renderStats(startDate) {
+  let workCount = 0, restCount = 0;
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  for (let d = 1; d <= daysInMonth; d++) {
+    const t = getDayType(startDate, formatDate(currentYear, currentMonth, d));
+    if (t.type === 'rest') restCount++; else workCount++;
+  }
+  document.getElementById('stats').innerHTML = `
+    <div class="stat-card"><div class="num" style="color:#e65100">${workCount}</div><div class="desc">本月上班</div></div>
+    <div class="stat-card"><div class="num" style="color:#2e7d32">${restCount}</div><div class="desc">本月休息</div></div>
+  `;
+}
+
+function shareLink() {
+  const startDate = document.getElementById('startDate').value;
+  if (!startDate) { showToast('请先设置起始日'); return; }
+  const url = `${location.origin}${location.pathname}?start=${startDate}`;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => showToast('链接已复制，可分享给同事！'));
+  } else {
+    prompt('复制此链接分享：', url);
+  }
+}
+
+let currentYear = new Date().getFullYear();
+let currentMonth = new Date().getMonth();
+
+document.getElementById('prevMonth').addEventListener('click', () => {
+  currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+  renderCalendar();
+});
+document.getElementById('nextMonth').addEventListener('click', () => {
+  currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+  renderCalendar();
+});
+document.getElementById('startDate').addEventListener('change', renderCalendar);
+document.getElementById('btnShare').addEventListener('click', shareLink);
+
+// 初始化
+const initDate = getStartDate();
+document.getElementById('startDate').value = initDate;
+renderCalendar();
+</script>
+</body>
+</html>
